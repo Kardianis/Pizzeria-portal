@@ -6,7 +6,7 @@ const MainLayout = ({children}) => (
   <div>
     <Header />
     <main>
-      {children}
+      {props.children}
     </main>
   </div>
 );
@@ -14,5 +14,6 @@ const MainLayout = ({children}) => (
 MainLayout.propTypes = {
   children: PropTypes.node,
 };
+
 
 export default MainLayout;
