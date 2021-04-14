@@ -1,87 +1,130 @@
-import { settings, select, classNames, templates } from '../settings.js';
-import { utils } from '../utils.js';
-import CartProduct from '../components/CartProduct.js';
-
+import CartProduct from './CartProduct.js';
+import utils from '../utils.js';
+import {select, classNames, settings, templates} from '../settings.js';
 
 class Cart {
   constructor(element) {
     const thisCart = this;
 
     thisCart.products = [];
-
     thisCart.getElements(element);
     thisCart.initActions();
     thisCart.deliveryFee = settings.cart.defaultDeliveryFee;
-  }
+    console.log(thisCart);
 
-  getElements(element) {
+  }
+  getElements(element){
     const thisCart = this;
 
     thisCart.dom = {};
-
     thisCart.dom.wrapper = element;
     thisCart.dom.toggleTrigger = thisCart.dom.wrapper.querySelector(select.cart.toggleTrigger);
     thisCart.dom.productList = thisCart.dom.wrapper.querySelector(select.cart.productList);
-
+    thisCart.dom.form = thisCart.dom.wrapper.querySelector(select.cart.form);
+    thisCart.dom.table = thisCart.dom.form.querySelector(select.cart.table);
+    thisCart.dom.phone = thisCart.dom.wrapper.querySelector(select.cart.phone);
+    thisCart.dom.address = thisCart.dom.wrapper.querySelector(select.cart.address);
     thisCart.renderTotalKeys = ['totalNumber', 'totalPrice', 'subtotalPrice', 'deliveryFee'];
 
-    for (let key of thisCart.renderTotalKeys) {
+    for(let key of thisCart.renderTotalKeys){
       thisCart.dom[key] = thisCart.dom.wrapper.querySelectorAll(select.cart[key]);
     }
 
 
-    thisCart.dom.form = thisCart.dom.wrapper.querySelector(select.cart.form);
-    thisCart.dom.address = thisCart.dom.wrapper.querySelector(select.cart.address);
-    thisCart.dom.phone = thisCart.dom.wrapper.querySelector(select.cart.phone);
   }
-
-  initActions() {
+  initActions(){
     const thisCart = this;
 
-    thisCart.dom.toggleTrigger.addEventListener('click', () => {
-      thisCart.dom.wrapper.classList.toggle(classNames.cart.wrapperActive);
-    });
-    thisCart.dom.productList.addEventListener('updated', () => {
-      thisCart.update();
-    });
-    thisCart.dom.productList.addEventListener('remove', function (event) {
-      thisCart.remove(event.detail.cartProduct);
-    });
-    thisCart.dom.form.addEventListener('submit', function (event) {
+    thisCart.dom.form.addEventListener('click', function(event){
       event.preventDefault();
       thisCart.sendOrder();
     });
+    thisCart.dom.toggleTrigger.addEventListener('click', function(){
+      thisCart.dom.wrapper.classList.toggle(classNames.cart.wrapperActive);
+    });
+    thisCart.dom.productList.addEventListener('updated', function(){
+      thisCart.update();
+    });
+    thisCart.dom.productList.addEventListener('remove', function(){
+      thisCart.remove(event.detail.cartProduct);
+    });
   }
 
-  add(menuProduct) {
+  remove(cartProduct){
     const thisCart = this;
-
-    const generatedHTML = templates.cartProduct(menuProduct);
-    thisCart.element = utils.createDOMFromHTML(generatedHTML);
-    thisCart.dom.productList.appendChild(thisCart.element);
-    thisCart.products.push(new CartProduct(menuProduct, thisCart.element));
-
+    const index = thisCart.products.indexOf(cartProduct);
+    thisCart.products.splice(index, 1);
+    cartProduct.dom.wrapper.remove();
     thisCart.update();
   }
 
-  sendOrder() {
-
+  add(menuProduct){
     const thisCart = this;
 
+    const generatedHTML = templates.cartProduct(menuProduct);
+    const generatedDOM = utils.createDOMFromHTML(generatedHTML);
+    const cartContainer = thisCart.dom.productList;
+    cartContainer.appendChild(generatedDOM);
+    thisCart.products.push(new CartProduct(menuProduct, generatedDOM));
+    thisCart.update();
+  }
+
+  update(){
+    const thisCart = this;
+
+    thisCart.totalNumber = 0;
+    thisCart.subtotalPrice = 0;
+    for (let product of thisCart.products){
+      thisCart.totalNumber += product.amount;
+      thisCart.subtotalPrice += product.price;
+    }
+    thisCart.totalPrice = thisCart.deliveryFee + thisCart.subtotalPrice;
+
+    for (let key of thisCart.renderTotalKeys){
+      for (let elem of thisCart.dom[key]){
+        elem.innerHTML = thisCart[key];
+      }
+    }
+  }
+
+  updateDbTable(tableId, order){
+    const thisCart = this
+    const url = settings.db.url + '/' + settings.db.table + '/' + tableId
+
+    const payload = {
+      id: parseInt(tableId),
+      status: 'ordered',
+      order: order,
+    }
+
+    const options = {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    };
+
+    fetch(url, options)
+
+  }
+
+  sendOrder(){
+    const thisCart = this;
     const url = settings.db.url + '/' + settings.db.order;
 
     const payload = {
-      address: thisCart.dom.address['value'],
-      phone: thisCart.dom.phone['value'],
+      address: 'test',
       totalPrice: thisCart.totalPrice,
+      phone: thisCart.dom.phone.value,
+      mail: thisCart.dom.address.value,
+      deliveryFee: thisCart.deliveryFee,
       subtotalPrice: thisCart.subtotalPrice,
       totalNumber: thisCart.totalNumber,
-      deliveryFee: thisCart.deliveryFee,
       products: [],
     };
-
-    for (let prod of thisCart.products) {
-      payload.products.push(prod.getData());
+    for(let pickedProduct of thisCart.products) {
+      payload.products.push(pickedProduct.getData());
     }
 
     const options = {
@@ -91,43 +134,15 @@ class Cart {
       },
       body: JSON.stringify(payload),
     };
-
-    fetch(url, options);
+    fetch(url, options)
+      .then(function(response){
+        return response.json();
+      }).then(function(parsedResponse){
+        thisCart.updateDbTable(thisCart.dom.table.value, parsedResponse.id)
+        console.log(parsedResponse);
+      });
   }
 
-  update() {
-
-    const thisCart = this;
-
-    thisCart.deliveryFee = settings.cart.defaultDeliveryFee;
-
-    thisCart.totalNumber = 0;
-    thisCart.subtotalPrice = 0;
-
-    for (let product of thisCart.products) {
-      thisCart.totalNumber += product.amount;
-      thisCart.subtotalPrice += product.price;
-    }
-
-    thisCart.totalPrice = thisCart.subtotalPrice + thisCart.deliveryFee;
-
-    for (let key of thisCart.renderTotalKeys) {
-      for (let elem of thisCart.dom[key]) {
-        elem.innerHTML = thisCart[key];
-      }
-    }
-  }
-
-  remove(cartProduct) {
-
-    const thisCart = this;
-
-    const elementIndex = thisCart.products.indexOf(cartProduct);
-
-    thisCart.products.splice(elementIndex, 1);
-    cartProduct.dom.wrapper.remove();
-    thisCart.update();
-  }
 }
 
 export default Cart;

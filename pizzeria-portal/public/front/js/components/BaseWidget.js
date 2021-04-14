@@ -1,61 +1,57 @@
-class BaseWidget {
-
-  constructor(wrapperElement, initialValue) {
+class BaseWidget{
+  constructor(wrapperElement, initialValue){
     const thisWidget = this;
 
     thisWidget.dom = {};
     thisWidget.dom.wrapper = wrapperElement;
-
     thisWidget.correctValue = initialValue;
   }
 
-  get value() { // get value jest getterem czyli metodą wykonywana przyk kazdej probie odczytania właściwoxsci  value
+  get value(){
     const thisWidget = this;
 
     return thisWidget.correctValue;
   }
 
-  set value(value) { // setter - metoda wykonywana przy kazdej próbie ustawienia nowej wartosci dla właciwosci value
+  set value(value){
     const thisWidget = this;
-
     const newValue = thisWidget.parseValue(value);
-
-    if (newValue !== thisWidget.correctValue && thisWidget.isValid(newValue)) {
+    if (newValue != thisWidget.correctValue && thisWidget.isValid(value)) {
       thisWidget.correctValue = newValue;
-      thisWidget.announce();
+      thisWidget.announce(); // jakikolwiek event na dziecku który czeka na wywołanie w rodzicu na konkretnym elemencie
     }
-
     thisWidget.renderValue();
   }
 
-  setValue(value) {
-    const thisWidget = this;
-
-    thisWidget.value = value;
-  }
-
-  parseValue(value) {
+  parseValue(value){
     return parseInt(value);
   }
 
-  isValid(value) {
+  isValid(value){
     return !isNaN(value);
   }
 
-  renderValue() {
+  renderValue(){
     const thisWidget = this;
 
     thisWidget.dom.wrapper.innerHTML = thisWidget.value;
   }
 
-  announce() {
+  setValue(value){
+    const thisWidget = this;
+
+    thisWidget.value = value;
+  }
+
+  announce(){
     const thisWidget = this;
 
     const event = new CustomEvent('updated', {
-      bubbles: true
+      bubbles: true,
     });
     thisWidget.dom.wrapper.dispatchEvent(event);
   }
+
 }
 
 export default BaseWidget;
