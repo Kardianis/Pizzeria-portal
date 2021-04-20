@@ -37,12 +37,15 @@ const App = () => {
                 <Switch>
                   <Route exact path={process.env.PUBLIC_URL + '/'} component={Homepage} />
                   <Route exact path={process.env.PUBLIC_URL + '/login'} component={Login} />
+                  <Route exact path={process.env.PUBLIC_URL + '/kitchen'} component={Kitchen} />
+                  <Route exact path={process.env.PUBLIC_URL + '/table'} component={Table} />
                   <Route exact path={`${process.env.PUBLIC_URL}/table/booking/:id`} component={Booking} />
                   <Route exact path={`${process.env.PUBLIC_URL}/table/booking/new`} component = {Booking}/>
                   <Route exact path={`${process.env.PUBLIC_URL}/table/events/:id`} component = {Events}/>
                   <Route exact path={`${process.env.PUBLIC_URL}/table/events/new`} component = {Events}/>
-                  <Route exact path={`${process.env.PUBLIC_URL}/order/:id`} component={Order} />
-                  <Route exact path={`${process.env.PUBLIC_URL}/order/new`} component={Order} />
+                  <Route exact path={`${process.env.PUBLIC_URL}/waiter`} component={Waiter} />
+                  <Route exact path={`${process.env.PUBLIC_URL}/waiter/order/:id`} component={Order} />
+                  <Route exact path={`${process.env.PUBLIC_URL}/waiter/order/new`} component={Order} />
                 </Switch>
               </MainLayout>
             </ThemeProvider>
